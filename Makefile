@@ -25,4 +25,4 @@ test:
 	docker compose run --rm api pytest
 
 deploy: down up-build migrate
-	@echo "Деплой выполнен успешно!"
+	@echo "Deploy complete!"
