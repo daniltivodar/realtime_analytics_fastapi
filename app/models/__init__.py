@@ -1,1 +1,1 @@
-from app.models.event import Event #noqa
+from app.models.event import Event, EventType #noqa

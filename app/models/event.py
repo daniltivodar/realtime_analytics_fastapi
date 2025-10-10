@@ -1,5 +1,9 @@
-from sqlalchemy import Column, DateTime, JSON, String
-from sqlalchemy.ext.mutable import MutableDict
+from datetime import datetime
+from enum import Enum
+
+from sqlalchemy import Column, DateTime, String
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 
 from app.core.db import Base
@@ -7,16 +11,22 @@ from app.core.db import Base
 EVENT_INFO = '<Event {event_id} {event_type} user:{user_id}>'
 
 
+class EventType(str, Enum):
+    PAGE_VIEW = 'page_view'
+    CLICK = 'click'
+    PURCHASE = 'purchase'
+
+
 class Event(Base):
     user_id = Column(String(32), index=True, nullable=False)
-    event_type = Column(String(64), index=True, nullable=False)
+    event_type = Column(SQLEnum(EventType), index=True, nullable=False)
     timestamp = Column(
         DateTime(timezone=True),
         index=True,
-        server_default=func.now(),
+        default=datetime.now(),
         nullable=False,
     )
-    data = Column(MutableDict.as_mutable(JSON), default=lambda: dict)
+    data = Column(JSONB, default=lambda: dict)
 
     def __repr__(self):
         return EVENT_INFO.format(
