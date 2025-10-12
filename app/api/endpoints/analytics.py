@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_async_session
 from app.crud import get_stats_summary
+from app.services import redis_service
 from app.schemas import StatsSummary
 
 router = APIRouter()
@@ -22,3 +23,11 @@ async def read_stats_summary(
                 - last_24h_events (int): Count of events for last 24 hours
     """
     return await get_stats_summary(session)
+
+
+@router.get('/stats/realtime')
+async def get_realtime_stats():
+    """Get realtime statistics from Redis."""
+    realtime_stats = await redis_service.get_realtime_stats()
+    await redis_service.close()
+    return realtime_stats

@@ -5,15 +5,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.validators import check_event_exists
 from app.models import Event
+from app.services import redis_service
 from app.schemas import EventCreate
+
+STATISTIC_UPDATE = 'stats_update'
 
 
 async def create_event(event: EventCreate, session: AsyncSession) -> Event:
-    """Create new event."""
+    """Create new event with update Redis."""
     event = Event(**event.model_dump())
     session.add(event)
     await session.commit()
     await session.refresh(event)
+
+    await redis_service.increment_event_counter(event.event_type)
+    await redis_service.increment_hourly_event(event.event_type)
+    await redis_service.add_user_activity(event.user_id, event.event_type)
+    await redis_service.publish_dashboard_update(dict(
+        type = STATISTIC_UPDATE,
+        data = await redis_service.get_realtime_stats(),
+    ))
+    await redis_service.close()
     return event
 
 

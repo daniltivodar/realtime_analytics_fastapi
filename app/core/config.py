@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     postgres_user: str = 'user'
     postgres_password: str = 'password'
 
+    redis_url: str = 'redis://localhost:6379'
+    redis_password: str = 'password'
+
     class Config:
         env_file = '.env'
 
