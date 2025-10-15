@@ -4,7 +4,6 @@ from enum import Enum
 from sqlalchemy import Column, DateTime, String
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.sql import func
 
 from app.core.db import Base
 

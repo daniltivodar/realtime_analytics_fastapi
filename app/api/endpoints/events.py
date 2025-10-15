@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_async_session
-from app.crud import create_event, get_event, get_events
+from app.crud import create_event, get_event, get_events, update_stats
 from app.schemas import Event, EventCreate
 
 router = APIRouter()
@@ -13,7 +13,9 @@ async def create_new_event(
     event: EventCreate, session: AsyncSession=Depends(get_async_session),
 ):
     """Create new event."""
-    return await create_event(event, session)
+    event = await create_event(event, session)
+    await update_stats(event.event_type, event.user_id)
+    return event
 
 
 @router.get('/', response_model=list[Event])

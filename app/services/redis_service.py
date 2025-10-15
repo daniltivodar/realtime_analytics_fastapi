@@ -7,7 +7,7 @@ from typing import Any, Callable, Optional
 
 import redis.asyncio as redis
 
-from app.services.constants import (
+from app.services.constants.redis_constants import (
     DASHBOARD_UPDATES,
     EVENT_TYPES_PER_HOUR_KEY,
     EVENT_TYPE_ALL_KEY,
