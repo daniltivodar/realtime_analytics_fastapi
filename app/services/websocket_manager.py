@@ -1,5 +1,4 @@
 import logging
-from asyncio import Queue
 from datetime import datetime as dt
 
 from fastapi import WebSocket
@@ -20,9 +19,7 @@ class ConnectionManager:
     """Manages WebSocket connections and message broadcasting."""
 
     def __init__(self):
-        self.active_connections: dict[str, WebSocket] = dict
-        self._sender_task = None
-        self._message_queue = Queue()
+        self.active_connections: dict[str, WebSocket] = {}
 
     async def connect(self, websocket: WebSocket, client_id: str) -> None:
         """Accept a new Websocket connection."""
@@ -52,31 +49,33 @@ class ConnectionManager:
                 len_connections=len(self.active_connections),
             ))
 
-    async def send_personal_message(
-        self, message: str, client_id: str,
-    ) -> bool:
-        """Sends a message to a specific client."""
-        active_connection = self.active_connections.get(client_id)
-        if not active_connection:
-            logger.warning(NON_EXIST_CLIENT.format(client_id=client_id))
-            return False
-
-        try:
-            await active_connection.send_json(dict(
-                message_type = 'personal',
-                content = message,
-                timestamp = dt.now().isoformat(),
-            ))
-            return True
-        except Exception as error:
-            logger.error(ERROR_SENDING.format(
-                client_id=client_id, error=error,
-            ))
-
+    async def _safe_disconnect(self, client_id: str) -> None:
+        """Safely disconnect client without raising exceptios."""
         try:
             await self.disconnect(client_id)
         except Exception as error:
             logger.debug(CLEANUP_ERROR.format(
                 client_id=client_id, error=error,
             ))
-        return False
+
+    async def broadcast(self, message: str) -> None:
+        """Sends messages to all clients."""
+        disconnected = []
+        for client_id, connection in self.active_connections.items():
+            try:
+                await connection.send_json(dict(
+                    message_type = 'broadcast',
+                    content = message,
+                    timestamp = dt.now().isoformat(),
+                ))
+            except Exception as error:
+                logger.error(ERROR_SENDING.format(
+                    client_id=client_id, error=error,
+                ))
+                disconnected.append(client_id)
+
+        for client_id in disconnected:
+            await self._safe_disconnect(client_id)
+
+
+manager = ConnectionManager()
