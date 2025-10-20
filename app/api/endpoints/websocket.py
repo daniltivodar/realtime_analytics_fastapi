@@ -26,7 +26,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
 @router.get('/dashboard', include_in_schema=True)
 async def get_websocket_info():
-    """Get WebSocket connection information"""
+    """Get WebSocket connection information."""
     return {
         "message": "Connect via WebSocket to this endpoint",
         "websocket_url": "ws://localhost:8000/ws/dashboard",

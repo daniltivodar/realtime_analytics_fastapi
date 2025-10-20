@@ -1,8 +1,13 @@
 from fastapi import APIRouter
 
-from app.api.endpoints import analytics_router, event_router, websocket_router
+from app.api.endpoints import (
+    analytics_router, event_router, health_router, websocket_router,
+)
 
 main_router = APIRouter()
+main_router.include_router(
+    health_router, prefix='/health', tags=['Health'],
+)
 main_router.include_router(
     analytics_router, prefix='/analytics', tags=['Analytics'],
 )

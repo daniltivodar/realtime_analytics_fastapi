@@ -1,22 +1,15 @@
 import contextlib
 import json
-import os
 from datetime import datetime as dt
 from functools import wraps
 from typing import Any, Callable, Optional
 
 import redis.asyncio as redis
 
-from app.services.constants.redis_constants import (
-    DASHBOARD_UPDATES,
-    EVENT_TYPES_PER_HOUR_KEY,
-    EVENT_TYPE_ALL_KEY,
-    EVENT_TYPE_KEY,
-    REDIS_URL,
-    TIME_FORMAT,
-    USER_ACTIVITY_ALL_KEY,
-    USER_ACTIVITY_KEY,
-)
+from app.core.config import settings
+
+DASHBOARD_UPDATES = 'dashboard-updates'
+TIME_FORMAT = '%Y-%m-%d-%H'
 
 
 def with_redis_client(func: Callable) -> Callable:
@@ -32,8 +25,28 @@ class RedisService:
     """Redis service."""
 
     def __init__(self):
-        self.redis_url = os.getenv('REDIS_URL', REDIS_URL)
+        self.redis_url = settings.redis_url
         self._client = None
+
+    def _get_event_key(self, event_type: str) -> str:
+        """Generate key for event type counter."""
+        return f'events:total:{event_type}'
+
+    def _get_hourly_event_key(self, event_type: str, hour: str) -> str:
+        """Generate key for hourly event counter."""
+        return f'events:hourly:{event_type}:{hour}'
+
+    def _get_user_activity_key(self, user_id: str) -> str:
+        """Generate key for user activity list."""
+        return f'user:activity:{user_id}'
+
+    def _get_event_pattern(self) -> str:
+        """Pattern for scanning event keys."""
+        return 'events:total:*'
+
+    def _get_user_activity_pattern(self) -> str:
+        """Pattern for scanning user activity keys."""
+        return 'user:activity:*'
 
     @contextlib.asynccontextmanager
     async def get_client(self):
@@ -51,9 +64,7 @@ class RedisService:
         self, client: redis.Redis, event_type: str,
     ) -> int:
         """Increment the counter for the event type."""
-        return await client.incr(
-            EVENT_TYPE_KEY.format(event_type=event_type),
-        )
+        return await client.incr(self._get_event_key(event_type))
 
     @with_redis_client
     async def increment_hourly_event(
@@ -61,7 +72,7 @@ class RedisService:
     ) -> int:
         """Increment the event counter for the current hour."""
         return await client.incr(
-            EVENT_TYPES_PER_HOUR_KEY.format(
+            self._get_hourly_event_key(
                 event_type=event_type, hour=dt.now().strftime(TIME_FORMAT),
             ),
         )
@@ -76,7 +87,7 @@ class RedisService:
         end_of_slice: int=99,
     ) -> None:
         """Adds user activity."""
-        key = USER_ACTIVITY_KEY.format(user_id=user_id)
+        key = self._get_user_activity_key(user_id=user_id)
         activity_data = json.dumps({
             "event_type": event_type,
             "timestamp": dt.now().isoformat(),
@@ -110,8 +121,12 @@ class RedisService:
     ) -> dict[str, Any]:
         """Get real time statistics from redis."""
         async with client.pipeline() as pipe:
-            event_keys = await self._scan_keys(EVENT_TYPE_ALL_KEY, client)
-            user_keys = await self._scan_keys(USER_ACTIVITY_ALL_KEY, client)
+            event_keys = await self._scan_keys(
+                self._get_event_pattern(), client,
+            )
+            user_keys = await self._scan_keys(
+                self._get_user_activity_pattern(), client,
+            )
             for key in event_keys:
                 pipe.get(key)
             event_values = await pipe.execute()

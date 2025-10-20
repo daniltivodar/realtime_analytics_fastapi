@@ -3,15 +3,6 @@ from datetime import datetime as dt
 
 from fastapi import WebSocket
 
-from app.services.constants.websocket_constants import (
-    CLEANUP_ERROR,
-    ERROR_CLOSING,
-    ERROR_SENDING,
-    NON_EXIST_CLIENT,
-    WEBSOCKET_CONNECTION,
-    WEBSOCKET_DISCONNECTION,
-)
-
 logger = logging.getLogger(__name__)
 
 
@@ -25,7 +16,7 @@ class ConnectionManager:
         """Accept a new Websocket connection."""
         await websocket.accept()
         self.active_connections[client_id] = websocket
-        logger.info(WEBSOCKET_CONNECTION.format(
+        logger.info('WebSocket connection established', extra=dict(
             client_id=client_id, len_connections=len(self.active_connections),
         ))
 
@@ -33,18 +24,22 @@ class ConnectionManager:
         """Disconnect WebSocket connection."""
         active_connection = self.active_connections.get(client_id)
         if not active_connection:
-            logger.warning(NON_EXIST_CLIENT.format(client_id=client_id))
+            logger.warning(
+                'WebSocket client not found', extra=dict(client_id=client_id),
+            )
             return
 
         try:
             await active_connection.close()
         except Exception as error:
-            logger.error(ERROR_CLOSING.format(
-                client_id=client_id, error=error,
-            ))
+            logger.error(
+                'WebSocket connection close error',
+                extra=dict(client_id=client_id, error=error),
+                exc_info=True,
+            )
         finally:
             del self.active_connections[client_id]
-            logger.info(WEBSOCKET_DISCONNECTION.format(
+            logger.info('WebSocket connection closed', extra=dict(
                 client_id=client_id,
                 len_connections=len(self.active_connections),
             ))
@@ -54,9 +49,11 @@ class ConnectionManager:
         try:
             await self.disconnect(client_id)
         except Exception as error:
-            logger.debug(CLEANUP_ERROR.format(
-                client_id=client_id, error=error,
-            ))
+            logger.error(
+                'WebSocket cleanup error',
+                extra=dict(client_id=client_id, error=error),
+                exc_info=True,
+            )
 
     async def broadcast(self, message: str) -> None:
         """Sends messages to all clients."""
@@ -69,9 +66,11 @@ class ConnectionManager:
                     timestamp = dt.now().isoformat(),
                 ))
             except Exception as error:
-                logger.error(ERROR_SENDING.format(
-                    client_id=client_id, error=error,
-                ))
+                logger.error(
+                    'WebSocket message send error',
+                    extra=dict(client_id=client_id, error=error),
+                    exc_info=True,
+                )
                 disconnected.append(client_id)
 
         for client_id in disconnected:

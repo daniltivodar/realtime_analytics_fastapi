@@ -7,9 +7,11 @@ from dotenv import load_dotenv
 
 from app.api.routers import main_router
 from app.core.config import settings
+from app.core.logging import setup_logging
 from app.services import listen_redis_updates
 
 load_dotenv()
+setup_logging()
 logger = logging.getLogger(__name__)
 
 
