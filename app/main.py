@@ -42,5 +42,6 @@ async def root():
             analytics='/analytics/stats/summary',
             realtime_stats='/analytics/stats/realtime',
             websocket='/ws/dashboard',
+            health='/health/',
         ),
     )

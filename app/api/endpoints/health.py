@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime
 from http import HTTPStatus
 
 import aiohttp
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_async_session
+from app.schemas import Health
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -33,7 +35,7 @@ async def check_database(session: AsyncSession) -> bool:
 async def check_redis() -> bool:
     """Check Redis connection."""
     try:
-        result = redis.from_url(settings.redis_url).ping()
+        result = await redis.from_url(settings.redis_url).ping()
         if result:
             logger.debug('Redis health check passed')
         else:
@@ -75,7 +77,7 @@ async def check_rabbitmq() -> bool:
         return False
 
 
-@router.get('/')
+@router.get('/', response_model=Health)
 async def health_check(
     session: AsyncSession = Depends(get_async_session),
 ) -> dict[str, bool]:
@@ -92,9 +94,10 @@ async def health_check(
     )
     if all(checks.values()):
         logger.info('All services are healthy.')
-        return dict(
+        return Health(
             status = 'healthy',
-            checks = checks,
+            services = checks,
+            timestamp=datetime.now().isoformat(),
         )
     failed_services = [
         service for service, status in checks.items() if not status
@@ -104,8 +107,9 @@ async def health_check(
     )
     raise HTTPException(
         HTTPStatus.SERVICE_UNAVAILABLE,
-        detail=dict(
+        detail=Health(
             status = 'unhealthy',
             services = checks,
+            timestamp = datetime.now().isoformat(),
         ),
     )

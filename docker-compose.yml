@@ -70,7 +70,7 @@ services:
 
   celery-worker:
     build: .
-    command: poetry run celery -A app.celery worker --loglevel=info
+    command: poetry run celery -A app.core.celery worker --loglevel=info
     env_file:
       - .env
     volumes:
@@ -82,11 +82,11 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-      restart: unless-stopped
+    restart: unless-stopped
 
   celery-beat:
     build: .
-    command: poetry run celery -A app.celery beat --loglevel=info
+    command: poetry run celery -A app.core.celery beat --loglevel=info
     env_file:
       - .env
     volumes:
@@ -98,9 +98,31 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-      restart: unless-stopped
+    restart: unless-stopped
+
+  celery-flower:
+    profiles: ["monitoring"]
+    build: .
+    command: >
+      poetry run python -m celery
+      --app=app.core.celery:celery_app
+      flower
+      --port=5555
+      --basic_auth=${FLOWER_USER}:${FLOWER_PASSWORD}
+      --broker=${CELERY_BROKER_URL}
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
+  celery_beat_data:
