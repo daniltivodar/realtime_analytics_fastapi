@@ -57,7 +57,7 @@ class RedisService:
         try:
             yield self._client
         finally:
-            pass
+            await self._client.close()
 
     @with_redis_client
     async def increment_event_counter(

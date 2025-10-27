@@ -29,7 +29,6 @@ async def update_stats(event_type: str, user_id: str) -> None:
         type = STATISTIC_UPDATE,
         data = await redis_service.get_realtime_stats(),
     ))
-    await redis_service.close()
 
 
 async def get_event(event_id: int, session: AsyncSession) -> Event:
