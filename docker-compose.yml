@@ -70,7 +70,12 @@ services:
 
   celery-worker:
     build: .
-    command: poetry run celery -A app.core.celery worker --loglevel=info
+    command: >
+      poetry run celery
+      -A app.core.celery
+      worker
+      --queues=analytics,maintenance,monitoring,realtime
+      -l info
     env_file:
       - .env
     volumes:

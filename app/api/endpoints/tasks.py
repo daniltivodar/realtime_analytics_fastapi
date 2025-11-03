@@ -1,17 +1,21 @@
 from fastapi import APIRouter
 
-from app.schemas import Task, TaskCreate
+from app.tasks.cleanup_tasks import (
+    cleanup_old_redis_data, cleanup_user_sessions,
+)
 
 router = APIRouter()
 
 
-@router.post('/run-hourly-aggregation', response_model=TaskCreate)
-async def run_hourly_aggregation() -> TaskCreate:
-    """Running hourly aggregation manually."""
-    pass
+@router.post('/run-cleanup')
+async def run_hourly_aggregation():
+    """Running cleanup tasks manually."""
+    cleanup_task = cleanup_old_redis_data.delay()
+    session_task = cleanup_user_sessions.delay()
 
-
-@router.get('/{task_id}', response_model=Task)
-async def get_task_status(task_id: str) -> Task:
-    """Get Celery task status."""
-    pass
+    return dict(
+        status='started',
+        tasks=dict(
+            redis_cleanup=cleanup_task.id, session_task=session_task.id,
+        ),
+    )

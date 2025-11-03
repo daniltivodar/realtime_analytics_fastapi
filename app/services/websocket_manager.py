@@ -61,9 +61,9 @@ class ConnectionManager:
         for client_id, connection in self.active_connections.items():
             try:
                 await connection.send_json(dict(
-                    message_type = 'broadcast',
-                    content = message,
-                    timestamp = dt.now().isoformat(),
+                    message_type='broadcast',
+                    content=message,
+                    timestamp=dt.now().isoformat(),
                 ))
             except Exception as error:
                 logger.error(

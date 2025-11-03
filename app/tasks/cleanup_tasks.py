@@ -12,12 +12,6 @@ logger = logging.getLogger(__name__)
 TIME_FORMAT = '%Y-%m-%d-%H'
 
 
-@celery_app.task
-def cleanup_old_redis_data():
-    """Cleaning old data from Redis."""
-    return asyncio.run(_cleanup_old_redis_data())
-
-
 @celery_task_with_logging('Redis cleanup completed', 'Redis cleanup failed')
 async def _cleanup_old_redis_data():
     """Async implementation of cleanup."""
@@ -36,9 +30,9 @@ async def _cleanup_old_redis_data():
 
 
 @celery_app.task
-def cleanup_user_sessions():
-    """Cleaning old user sessions."""
-    return asyncio.run(_cleanup_user_sessions())
+def cleanup_old_redis_data():
+    """Cleaning old data from Redis."""
+    return asyncio.run(_cleanup_old_redis_data())
 
 
 @celery_task_with_logging(
@@ -64,9 +58,9 @@ async def _cleanup_user_sessions():
 
 
 @celery_app.task
-def backup_current_stats():
-    """Backing up current statistics."""
-    return asyncio.run(_backup_current_stats())
+def cleanup_user_sessions():
+    """Cleaning old user sessions."""
+    return asyncio.run(_cleanup_user_sessions())
 
 
 @celery_task_with_logging('Stats backup completed', 'Stats backup failed')
@@ -80,19 +74,6 @@ async def _backup_current_stats():
 
 
 @celery_app.task
-def monitor_redis_memory():
-    """Monitoring Redis memory usage."""
-    return asyncio.run(_monitor_redis_memory())
-
-
-@celery_task_with_logging(
-    'Redis memory usage', 'Redis memory monitoring failed',
-)
-async def _monitor_redis_memory():
-    """Async implementation of memory monitoring."""
-    async with redis_service.get_client() as client:
-        info = await client.info('memory')
-        return dict(
-            memory_used=info.get('used_memory'),
-            memory_peak=info.get('used_memory_peak'),
-        )
+def backup_current_stats():
+    """Backing up current statistics."""
+    return asyncio.run(_backup_current_stats())

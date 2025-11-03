@@ -137,10 +137,10 @@ class RedisService:
                 events_by_type[event_type] = int(value) if value else 0
 
             return dict(
-                total_events = sum(events_by_type.values()),
-                events_by_type = events_by_type,
-                active_users = len(user_keys),
-                timestamp = dt.now().isoformat(),
+                total_events=sum(events_by_type.values()),
+                events_by_type=events_by_type,
+                active_users=len(user_keys),
+                timestamp=dt.now().isoformat(),
             )
 
     @with_redis_client
