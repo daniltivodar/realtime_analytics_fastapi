@@ -5,14 +5,13 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.services import manager, redis_service
 
-MAX_CHAR_UUID = 8
 router = APIRouter()
 
 
 @router.websocket('/dashboard')
 async def websocket_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint for accessing and updating dashboard."""
-    client_id = str(uuid.uuid4())[:MAX_CHAR_UUID]
+    client_id = str(uuid.uuid4())[:8]
     await manager.connect(websocket, client_id)
 
     try:

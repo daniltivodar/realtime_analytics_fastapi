@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.core.celery import celery_app
 from app.services import redis_service
@@ -12,7 +12,7 @@ from app.tasks import celery_task_with_logging
 )
 async def _update_realtime_metrics():
     """Async implementation of update metrics."""
-    current_time = datetime.now()
+    current_time = datetime.now(timezone.utc)
     stats = await redis_service.get_realtime_stats()
     
     async with redis_service.get_client() as client:

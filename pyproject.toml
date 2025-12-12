@@ -21,7 +21,8 @@ dependencies = [
     "websockets (>=15.0.1,<16.0.0)",
     "celery[flower] (>=5.5.3,<6.0.0)",
     "aiohttp (>=3.13.1,<4.0.0)",
-    "flower (>=2.0.1,<3.0.0)"
+    "flower (>=2.0.1,<3.0.0)",
+    "fastapi-users[sqlalchemy] (>=15.0.1,<16.0.0)"
 ]
 
 

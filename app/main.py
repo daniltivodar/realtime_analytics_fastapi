@@ -3,6 +3,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from app.api.routers import main_router
@@ -30,6 +31,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan, title=settings.app_title)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+)
 app.include_router(main_router)
 
 @app.get('/')

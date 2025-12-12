@@ -1,12 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 
 from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Event
-
-LAST24HOURS = 24
 
 
 async def get_stats_summary(session: AsyncSession) -> dict[str: Any]:
@@ -29,7 +27,7 @@ async def get_stats_summary(session: AsyncSession) -> dict[str: Any]:
             ).group_by(Event.event_type))
     ).all()
     last_24h_events = await session.scalar(select(func.count(Event.id).filter(
-        Event.timestamp >= (datetime.now() - timedelta(hours=LAST24HOURS)),
+        Event.timestamp >= ( - timedelta(hours=24)),
     )))
 
     return dict(

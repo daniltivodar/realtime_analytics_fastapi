@@ -3,6 +3,7 @@ import json
 from datetime import datetime as dt
 from functools import wraps
 from typing import Any, Callable, Optional
+from uuid import UUID
 
 import redis.asyncio as redis
 
@@ -36,7 +37,7 @@ class RedisService:
         """Generate key for hourly event counter."""
         return f'events:hourly:{event_type}:{hour}'
 
-    def _get_user_activity_key(self, user_id: str) -> str:
+    def _get_user_activity_key(self, user_id: UUID) -> str:
         """Generate key for user activity list."""
         return f'user:activity:{user_id}'
 
@@ -81,7 +82,7 @@ class RedisService:
     async def add_user_activity(
         self,
         client: redis.Redis,
-        user_id: str,
+        user_id: UUID,
         event_type: str,
         start_of_slice: int=0,
         end_of_slice: int=99,

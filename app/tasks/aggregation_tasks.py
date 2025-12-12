@@ -1,6 +1,7 @@
 import asyncio
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from uuid import UUID
 
 from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +18,7 @@ from app.tasks import celery_task_with_logging, with_async_session
 @with_async_session
 async def _calculate_hourly_aggregation(session: AsyncSession):
     """Async implementation of aggregation."""
-    hour_ago = datetime.now() - timedelta(hours=1)
+    hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
     hour_str = hour_ago.strftime('%Y-%m-%d-%H')
 
     events_by_type = dict((await session.execute(
@@ -37,7 +38,7 @@ async def _calculate_hourly_aggregation(session: AsyncSession):
         events_by_type=events_by_type,
         unique_users=unique_users,
         total_events=total_events,
-        timestamp=datetime.now().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
     )
 
     async with redis_service.get_client() as client:
@@ -66,13 +67,15 @@ def calculate_hourly_aggregation():
     'User behavior metrics calculated', 'User behavior calculation failed',
 )
 async def _calculate_user_behavior_metrics(
-    session: AsyncSession, user_id: str,
+    session: AsyncSession, user_id: UUID,
 ):
     """Async implementation of calculation user behavior metrics."""
     user_events = (
         await session.execute(select(Event).where(
             Event.user_id == user_id,
-            Event.timestamp == datetime.now() - timedelta(hours=24),
+            Event.timestamp == (
+                datetime.now(timezone.utc) - timedelta(hours=24),
+            ),
         ).order_by(Event.timestamp))
     ).scalars().all()
 
@@ -96,7 +99,7 @@ async def _calculate_user_behavior_metrics(
         )),
         first_event_at=first_event_timestamp.isoformat(),
         last_event_at=last_event_timestamp.isoformat(),
-        timestamp=datetime.now().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
     )
 
     async with redis_service.get_client() as client:
@@ -107,13 +110,13 @@ async def _calculate_user_behavior_metrics(
         )
     return dict(
         user_id=user_id,
-        timestamp=datetime.now().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
         metrics=metrics,
     )
 
 
 @celery_app.task
-def calculate_user_behavior_metrics(user_id: str):
+def calculate_user_behavior_metrics(user_id: UUID):
     """Calculating user behavior metrics."""
     return asyncio.run(_calculate_user_behavior_metrics(user_id))
 
@@ -125,7 +128,8 @@ def calculate_user_behavior_metrics(user_id: str):
 async def _calculate_daily_summary(session: AsyncSession):
     """Async implementation of calculation daily summary."""
     start_of_day = datetime.combine(
-        datetime.now().date() - timedelta(hours=24), datetime.min.time(),
+        datetime.now(timezone.utc).date() - timedelta(hours=24),
+        datetime.min.time(),
     )
     end_of_day = start_of_day + timedelta(hours=24)
     start_of_day_string = start_of_day.strftime('%Y-%m-%d')
@@ -146,7 +150,7 @@ async def _calculate_daily_summary(session: AsyncSession):
         total_events=sum(event['count'] for event in daily_stats),
         total_users=sum(event['unique_users'] for event in daily_stats),
         events_by_type=daily_stats,
-        timestamp=datetime.now().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
     )
 
     async with redis_service.get_client() as client:

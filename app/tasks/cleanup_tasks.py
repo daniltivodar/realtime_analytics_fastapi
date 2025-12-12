@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.core.celery import celery_app
 from app.services import redis_service
@@ -19,7 +19,7 @@ async def _cleanup_old_redis_data():
     async with redis_service.get_client() as client:
         async for key in client.scan_iter('events:hourly:*', count=100):
             key_date = datetime.strptime(str(key).split(':')[-1], TIME_FORMAT)
-            if datetime.now() - key_date > timedelta(hours=48):
+            if datetime.now(timezone.utc) - key_date > timedelta(hours=48):
                 await client.delete(key)
                 deleted_count += 1
                 logger.debug(
@@ -48,7 +48,9 @@ async def _cleanup_user_sessions():
                 activity_time = datetime.fromisoformat(
                     json.loads(last_activity)['timestamp'],
                 )
-                if activity_time < datetime.now() - timedelta(days=7):
+                if activity_time < (
+                    datetime.now(timezone.utc) - timedelta(days=7),
+                ):
                     await client.delete(key)
                     deleted_count += 1
                     logger.debug(
@@ -67,7 +69,9 @@ def cleanup_user_sessions():
 async def _backup_current_stats():
     """Async implementation of backup."""
     stats = await redis_service.get_realtime_stats()
-    backup_key = f'backup:stats:{datetime.now().strftime(TIME_FORMAT)}'
+    backup_key = f'backup:stats:{
+        datetime.now(timezone.utc).strftime(TIME_FORMAT),
+    }'
     async with redis_service.get_client() as client:
         await client.setex(backup_key, timedelta(days=7), json.dumps(stats))
     return dict(backup_key=backup_key, stats=stats)

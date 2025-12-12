@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.endpoints import (
     analytics_router,
+    auth_router,
     event_router,
     health_router,
     task_router,
@@ -14,6 +15,9 @@ main_router.include_router(
 )
 main_router.include_router(
     analytics_router, prefix='/analytics', tags=['Analytics'],
+)
+main_router.include_router(
+    auth_router, prefix='/auth', tags=['Auth'],
 )
 main_router.include_router(
     event_router, prefix='/event', tags=['Event'],

@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,9 +10,13 @@ from app.services import redis_service
 from app.schemas import EventCreate
 
 
-async def create_event(event: EventCreate, session: AsyncSession) -> Event:
+async def create_event(
+    event: EventCreate, user_id: UUID, session: AsyncSession,
+) -> Event:
     """Create new event."""
-    event = Event(**event.model_dump())
+    event_dict = event.model_dump()
+    event_dict['user_id'] = user_id
+    event = Event(**event_dict)
     session.add(event)
     await session.commit()
     await session.refresh(event)
@@ -41,11 +46,14 @@ async def get_event(event_id: int, session: AsyncSession) -> Event:
 
 async def get_events(
     session: AsyncSession,
+    user_id: UUID,
     offset: Optional[int] = 0,
     limit: Optional[int] = None,
 ) -> list[Event]:
     """Get all events."""
-    query = select(Event).order_by(desc(Event.timestamp)).offset(offset)
+    query = select(Event).where(
+        Event.user_id == user_id,
+    ).order_by(desc(Event.timestamp)).offset(offset)
     if limit:
         query = query.limit(limit)
     return (await session.scalars(query)).all()

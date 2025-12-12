@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from http import HTTPStatus
 
 import aiohttp
@@ -97,7 +97,7 @@ async def health_check(
         return Health(
             status = 'healthy',
             services = checks,
-            timestamp=datetime.now().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
     failed_services = [
         service for service, status in checks.items() if not status
@@ -110,6 +110,6 @@ async def health_check(
         detail=Health(
             status = 'unhealthy',
             services = checks,
-            timestamp = datetime.now().isoformat(),
+            timestamp = datetime.now(timezone.utc).isoformat(),
         ),
     )
