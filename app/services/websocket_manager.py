@@ -5,76 +5,79 @@ from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 
+MAX_CONNECTIONS_PER_USER = 3
+
 
 class ConnectionManager:
     """Manages WebSocket connections and message broadcasting."""
 
     def __init__(self):
-        self.active_connections: dict[str, WebSocket] = {}
+        self.user_connections: dict[str, list[WebSocket]] = {}
 
-    async def connect(self, websocket: WebSocket, client_id: str) -> None:
+    async def connect(self, websocket: WebSocket, user_id: str) -> None:
         """Accept a new Websocket connection."""
         await websocket.accept()
-        self.active_connections[client_id] = websocket
+        if user_id not in self.user_connections:
+            self.user_connections[user_id] = []
+        if len(self.user_connections[user_id]) >= MAX_CONNECTIONS_PER_USER:
+            oldest_connection = self.user_connections[user_id].pop(0)
+            try:
+                await oldest_connection.close(
+                    code=1008, reason='Too many connections',
+                )
+            except:
+                pass
+        self.user_connections[user_id].append(websocket)
         logger.info('WebSocket connection established', extra=dict(
-            client_id=client_id, len_connections=len(self.active_connections),
+            user_id=user_id, len_connections=len(self.user_connections),
         ))
 
-    async def disconnect(self, client_id: str) -> None:
+    async def disconnect(self, user_id: str, websocket: WebSocket) -> None:
         """Disconnect WebSocket connection."""
-        active_connection = self.active_connections.get(client_id)
-        if not active_connection:
+        active_connections = self.user_connections.get(user_id)
+        if not active_connections:
             logger.warning(
-                'WebSocket client not found', extra=dict(client_id=client_id),
+                'WebSocket client not found', extra=dict(user_id=user_id),
             )
             return
-
+        if websocket in self.user_connections[user_id]:
+            self.user_connections[user_id].remove(websocket)
         try:
-            await active_connection.close()
+            await websocket.close()
         except Exception as error:
             logger.error(
                 'WebSocket connection close error',
-                extra=dict(client_id=client_id, error=error),
+                extra=dict(user_id=user_id, error=error),
                 exc_info=True,
             )
-        finally:
-            del self.active_connections[client_id]
+            if not self.user_connections[user_id]:
+                del self.user_connections[user_id]
             logger.info('WebSocket connection closed', extra=dict(
-                client_id=client_id,
-                len_connections=len(self.active_connections),
+                user_id=user_id,
+                len_connections=len(self.user_connections),
             ))
-
-    async def _safe_disconnect(self, client_id: str) -> None:
-        """Safely disconnect client without raising exceptios."""
-        try:
-            await self.disconnect(client_id)
-        except Exception as error:
-            logger.error(
-                'WebSocket cleanup error',
-                extra=dict(client_id=client_id, error=error),
-                exc_info=True,
-            )
 
     async def broadcast(self, message: str) -> None:
         """Sends messages to all clients."""
         disconnected = []
-        for client_id, connection in self.active_connections.items():
-            try:
-                await connection.send_json(dict(
-                    message_type='broadcast',
-                    content=message,
-                    timestamp=dt.now().isoformat(),
-                ))
-            except Exception as error:
-                logger.error(
-                    'WebSocket message send error',
-                    extra=dict(client_id=client_id, error=error),
-                    exc_info=True,
-                )
-                disconnected.append(client_id)
+        for user_id, connections in self.user_connections.items():
+            for connection in connections:
+                try:
+                    await connection.send_json(dict(
+                        message_type='broadcast',
+                        content=message,
+                        timestamp=dt.now().isoformat(),
+                    ))
+                except Exception as error:
+                    logger.error(
+                        'WebSocket message send error',
+                        extra=dict(user_id=user_id, error=error),
+                        exc_info=True,
+                    )
+                    disconnected.append((user_id, connection))
 
-        for client_id in disconnected:
-            await self._safe_disconnect(client_id)
+        for user_id, connection in disconnected:
+            await self.disconnect(user_id, connection)
 
 
 manager = ConnectionManager()
