@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.celery import celery_app
 from app.models import Event
 from app.services import redis_service
-from app.tasks import celery_task_with_logging, with_async_session
+from app.tasks.decorators import celery_task_with_logging, with_async_session
 
 
 @celery_task_with_logging(
@@ -62,10 +62,10 @@ def calculate_hourly_aggregation():
     return asyncio.run(_calculate_hourly_aggregation())
 
 
-@with_async_session
 @celery_task_with_logging(
     'User behavior metrics calculated', 'User behavior calculation failed',
 )
+@with_async_session
 async def _calculate_user_behavior_metrics(
     session: AsyncSession, user_id: UUID,
 ):
@@ -73,8 +73,8 @@ async def _calculate_user_behavior_metrics(
     user_events = (
         await session.execute(select(Event).where(
             Event.user_id == user_id,
-            Event.timestamp == (
-                datetime.now(timezone.utc) - timedelta(hours=24),
+            Event.timestamp >= (
+                datetime.now(timezone.utc) - timedelta(hours=24)
             ),
         ).order_by(Event.timestamp))
     ).scalars().all()
@@ -121,10 +121,10 @@ def calculate_user_behavior_metrics(user_id: UUID):
     return asyncio.run(_calculate_user_behavior_metrics(user_id))
 
 
-@with_async_session
 @celery_task_with_logging(
     'Daily summary calculated', 'Daily summary calculation failed.',
 )
+@with_async_session
 async def _calculate_daily_summary(session: AsyncSession):
     """Async implementation of calculation daily summary."""
     start_of_day = datetime.combine(

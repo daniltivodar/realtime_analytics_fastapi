@@ -1,9 +1,8 @@
+import uuid
 from enum import Enum
-from uuid import UUID
 
-from sqlalchemy import Column, DateTime, ForeignKey, func
+from sqlalchemy import Column, DateTime, ForeignKey, func, JSON, UUID
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.db import Base
 
@@ -15,7 +14,13 @@ class EventType(str, Enum):
 
 
 class Event(Base):
-    user_id = Column(UUID, ForeignKey('user.id'), index=True, nullable=False)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey('user.id'),
+        index=True,
+        nullable=False,
+        default=uuid.uuid4,
+    )
     event_type = Column(SQLEnum(EventType), index=True, nullable=False)
     timestamp = Column(
         DateTime(timezone=True),
@@ -23,7 +28,7 @@ class Event(Base):
         server_default=func.now(),
         nullable=False,
     )
-    data = Column(JSONB, default=lambda: dict)
+    data = Column(JSON, default=lambda: dict)
 
     def __repr__(self):
         return f'<Event {self.id} {self.event_type} user:{self.user_id}>'

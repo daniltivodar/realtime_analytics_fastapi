@@ -1,7 +1,7 @@
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class UserRead(BaseModel):
@@ -12,8 +12,7 @@ class UserRead(BaseModel):
     is_verified: bool
     full_name: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserCreate(BaseModel):

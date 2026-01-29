@@ -129,7 +129,7 @@ class RedisService:
                 self._get_user_activity_pattern(), client,
             )
             for key in event_keys:
-                pipe.get(key)
+                await pipe.get(key)
             event_values = await pipe.execute()
 
             events_by_type = {}

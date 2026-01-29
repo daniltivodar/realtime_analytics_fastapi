@@ -12,15 +12,16 @@ from app.schemas import Event, EventCreate
 router = APIRouter()
 
 
-@router.post('/', response_model=Event)
+@router.post('/', response_model=Event, status_code=HTTPStatus.CREATED)
 async def create_new_event(
     event: EventCreate,
     session: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_user),
 ):
     """Create new event."""
-    event = await create_event(event, user.id, session)
-    await update_stats(event.event_type, event.user_id)
+    user_id = event.user_id if user.is_superuser else user.id
+    event = await create_event(event, user_id, session)
+    await update_stats(event.event_type, str(event.user_id))
     return event
 
 

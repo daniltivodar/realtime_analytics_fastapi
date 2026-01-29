@@ -67,8 +67,8 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                     timeout=30.0,
                 )
                 if data.get('action') == 'get_stats':
-                    await _send_json_realtime_stats()
-            except asyncio.TimeoutError():
+                    await _send_json_realtime_stats(websocket)
+            except asyncio.TimeoutError:
                 break
 
     except WebSocketDisconnect:

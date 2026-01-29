@@ -9,7 +9,7 @@ RUN pip install --upgrade pip && \
 
 RUN poetry config virtualenvs.create false
 
-RUN poetry install --without dev --no-interaction --no-ansi --no-root
+RUN poetry install --no-interaction --no-ansi --no-root
 
 COPY . .
 

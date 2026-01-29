@@ -40,8 +40,12 @@ class ConnectionManager:
                 'WebSocket client not found', extra=dict(user_id=user_id),
             )
             return
+
         if websocket in self.user_connections[user_id]:
             self.user_connections[user_id].remove(websocket)
+        if not self.user_connections[user_id]:
+            del self.user_connections[user_id]
+
         try:
             await websocket.close()
         except Exception as error:
@@ -50,8 +54,6 @@ class ConnectionManager:
                 extra=dict(user_id=user_id, error=error),
                 exc_info=True,
             )
-            if not self.user_connections[user_id]:
-                del self.user_connections[user_id]
             logger.info('WebSocket connection closed', extra=dict(
                 user_id=user_id,
                 len_connections=len(self.user_connections),

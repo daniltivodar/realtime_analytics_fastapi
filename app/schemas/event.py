@@ -2,7 +2,7 @@ from datetime import datetime as dt
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.models import EventType
 
@@ -21,5 +21,4 @@ class Event(EventBase):
     id: int
     timestamp: dt
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

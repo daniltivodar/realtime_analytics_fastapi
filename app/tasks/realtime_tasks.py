@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.core.celery import celery_app
 from app.services import redis_service
-from app.tasks import celery_task_with_logging
+from app.tasks.decorators import celery_task_with_logging
 
 
 @celery_task_with_logging(
