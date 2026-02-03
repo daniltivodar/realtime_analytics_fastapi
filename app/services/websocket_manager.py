@@ -1,4 +1,5 @@
 import logging
+from datetime import UTC
 from datetime import datetime as dt
 
 from fastapi import WebSocket
@@ -11,7 +12,7 @@ MAX_CONNECTIONS_PER_USER = 3
 class ConnectionManager:
     """Manages WebSocket connections and message broadcasting."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.user_connections: dict[str, list[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, user_id: str) -> None:
@@ -23,21 +24,28 @@ class ConnectionManager:
             oldest_connection = self.user_connections[user_id].pop(0)
             try:
                 await oldest_connection.close(
-                    code=1008, reason='Too many connections',
+                    code=1008,
+                    reason="Too many connections",
                 )
-            except:
-                pass
+            except Exception:
+                logger.exception("WebSocket close failed")
+
         self.user_connections[user_id].append(websocket)
-        logger.info('WebSocket connection established', extra=dict(
-            user_id=user_id, len_connections=len(self.user_connections),
-        ))
+        logger.info(
+            "WebSocket connection established",
+            extra=dict(
+                user_id=user_id,
+                len_connections=len(self.user_connections),
+            ),
+        )
 
     async def disconnect(self, user_id: str, websocket: WebSocket) -> None:
         """Disconnect WebSocket connection."""
         active_connections = self.user_connections.get(user_id)
         if not active_connections:
             logger.warning(
-                'WebSocket client not found', extra=dict(user_id=user_id),
+                "WebSocket client not found",
+                extra=dict(user_id=user_id),
             )
             return
 
@@ -49,15 +57,17 @@ class ConnectionManager:
         try:
             await websocket.close()
         except Exception as error:
-            logger.error(
-                'WebSocket connection close error',
+            logger.exception(
+                "WebSocket connection close error",
                 extra=dict(user_id=user_id, error=error),
-                exc_info=True,
             )
-            logger.info('WebSocket connection closed', extra=dict(
-                user_id=user_id,
-                len_connections=len(self.user_connections),
-            ))
+            logger.info(
+                "WebSocket connection closed",
+                extra=dict(
+                    user_id=user_id,
+                    len_connections=len(self.user_connections),
+                ),
+            )
 
     async def broadcast(self, message: str) -> None:
         """Sends messages to all clients."""
@@ -65,14 +75,16 @@ class ConnectionManager:
         for user_id, connections in self.user_connections.items():
             for connection in connections:
                 try:
-                    await connection.send_json(dict(
-                        message_type='broadcast',
-                        content=message,
-                        timestamp=dt.now().isoformat(),
-                    ))
+                    await connection.send_json(
+                        dict(
+                            message_type="broadcast",
+                            content=message,
+                            timestamp=dt.now(UTC).isoformat(),
+                        ),
+                    )
                 except Exception as error:
                     logger.error(
-                        'WebSocket message send error',
+                        "WebSocket message send error",
                         extra=dict(user_id=user_id, error=error),
                         exc_info=True,
                     )

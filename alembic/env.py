@@ -11,7 +11,7 @@ from alembic import context
 
 from app.core.base import Base
 
-load_dotenv('.env')
+load_dotenv(".env")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -27,6 +27,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
+
 
 def get_database_url():
     """Get database url from .env"""

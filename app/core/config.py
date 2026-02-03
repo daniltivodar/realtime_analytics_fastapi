@@ -2,30 +2,30 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_title: str = 'Realtime analytics dashboard'
+    app_title: str = "Realtime analytics dashboard"
     database_url: str = (
-        'postgresql+asyncpg://user:password@postgres:5432/analytics'
+        "postgresql+asyncpg://user:password@postgres:5432/analytics"
     )
-    secret: str = 'SECRET'
+    secret: str
 
-    postgres_db: str = 'analytics'
-    postgres_user: str = 'user'
-    postgres_password: str = 'password'
+    postgres_db: str = "analytics"
+    postgres_user: str = "user"
+    postgres_password: str
 
-    redis_url: str = 'redis://localhost:6379'
-    redis_password: str = 'password'
+    redis_url: str = "redis://localhost:6379"
+    redis_password: str
 
-    celery_broker_url: str = 'amqp://guest:guest@rabbitmq:5672//'
-    celery_result_backend: str = 'redis://:password@redis:6379/0'
+    celery_broker_url: str = "amqp://guest:guest@rabbitmq:5672//"
+    celery_result_backend: str = "redis://:password@redis:6379/0"
 
-    rabbitmq_user: str = 'guest'
-    rabbitmq_password: str = 'guest'
+    rabbitmq_user: str = "guest"
+    rabbitmq_password: str
 
-    flower_user: str = 'admin'
-    flower_password: str = 'password'
+    flower_user: str = "admin"
+    flower_password: str
 
     model_config = SettingsConfigDict(
-        env_file='.env',
+        env_file=".env",
     )
 
 

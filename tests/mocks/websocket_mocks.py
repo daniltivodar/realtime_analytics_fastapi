@@ -14,7 +14,7 @@ def create_websocket_mock(**kwargs):
     mock.send_json = AsyncMock()
     mock.receive_json = AsyncMock()
     mock.close = AsyncMock()
-    mock.client = AsyncMock(host='127.0.0.1', port=8000)
+    mock.client = AsyncMock(host="127.0.0.1", port=8000)
 
     for key, value in kwargs.items():
         setattr(mock, key, value)
@@ -32,10 +32,12 @@ def websocket_mock():
 def authenticated_websocket():
     """WebSocket with successful authentication."""
     websocket = create_websocket_mock()
-    websocket.receive_json = AsyncMock(return_value={
-        'type': 'auth',
-        'token': 'valid-token',
-    })
+    websocket.receive_json = AsyncMock(
+        return_value={
+            "type": "auth",
+            "token": "valid-token",
+        },
+    )
     return websocket
 
 
@@ -43,10 +45,12 @@ def authenticated_websocket():
 def invalid_auth_websocket():
     """WebSocket with unsuccessful authentication."""
     websocket = create_websocket_mock()
-    websocket.receive_json = AsyncMock(return_value={
-        'type': 'auth',
-        'token': 'invalid-token',
-    })
+    websocket.receive_json = AsyncMock(
+        return_value={
+            "type": "auth",
+            "token": "invalid-token",
+        },
+    )
     return websocket
 
 
@@ -54,7 +58,7 @@ def invalid_auth_websocket():
 def websocket_timeout():
     """WebSocket with timeout."""
     websocket = create_websocket_mock()
-    websocket.receive_json = AsyncMock(side_effect=asyncio.TimeoutError())
+    websocket.receive_json = AsyncMock(side_effect=TimeoutError())
     return websocket
 
 
@@ -64,7 +68,7 @@ def broken_connection_websocket():
     websocket = AsyncMock()
     websocket.accept = AsyncMock()
     websocket.send_json = AsyncMock(
-        side_effect=RuntimeError('Send failed'),
+        side_effect=RuntimeError("Send failed"),
     )
     return websocket
 
@@ -82,8 +86,8 @@ def mock_redis_for_websocket():
 
     async def mock_listen():
         messages = [
-            {'type': 'message', 'data': b'{"event": "dashboard_update"}'},
-            {'type': 'message', 'data': b'{"event": "stats_update"}'},
+            {"type": "message", "data": b'{"event": "dashboard_update"}'},
+            {"type": "message", "data": b'{"event": "stats_update"}'},
         ]
         for message in messages:
             yield message
@@ -98,6 +102,6 @@ def mock_redis_for_websocket():
 @pytest.fixture
 def patched_jwt_decode():
     """Patching JWT decoder."""
-    with patch('app.api.endpoints.websocket.jwt.decode') as mock_decode:
-        mock_decode.return_value = {'sub': str(uuid.uuid4())}
+    with patch("app.api.endpoints.websocket.jwt.decode") as mock_decode:
+        mock_decode.return_value = {"sub": str(uuid.uuid4())}
         yield mock_decode

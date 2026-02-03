@@ -1,27 +1,27 @@
-from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from fastapi_users import schemas
+from pydantic import ConfigDict, EmailStr
 
 
-class UserRead(BaseModel):
+class UserRead(schemas.BaseUser[UUID]):
     id: UUID
     email: EmailStr
     is_active: bool
     is_superuser: bool
     is_verified: bool
-    full_name: Optional[str] = None
+    full_name: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserCreate(BaseModel):
+class UserCreate(schemas.BaseUserCreate):
     email: EmailStr
     password: str
-    full_name: Optional[str] = None
+    full_name: str | None = None
 
 
-class UserUpdate(BaseModel):
-    password: Optional[str] = None
-    email: Optional[EmailStr] = None
-    full_name: Optional[str] = None
+class UserUpdate(schemas.BaseUserUpdate):
+    password: str | None = None
+    email: EmailStr | None = None
+    full_name: str | None = None

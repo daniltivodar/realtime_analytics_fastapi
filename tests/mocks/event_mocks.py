@@ -9,9 +9,9 @@ from app.models import Event, EventType
 @pytest.fixture
 def sample_event_data():
     return dict(
-        user_id = str(uuid.uuid4()),
-        event_type = EventType.PAGE_VIEW,
-        data = dict(page = 'home', duration = 30),
+        user_id=str(uuid.uuid4()),
+        event_type=EventType.PAGE_VIEW,
+        data=dict(page="home", duration=30),
     )
 
 

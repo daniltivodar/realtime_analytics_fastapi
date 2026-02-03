@@ -8,13 +8,13 @@ def create_redis_client(**kwargs):
     """Creates a mock Redis client."""
     mock = AsyncMock()
     defaults = {
-        'incr': AsyncMock(return_value=1),
-        'publish': AsyncMock(),
-        'get': AsyncMock(return_value='0'),
-        'scan': AsyncMock(return_value=(0, [])),
-        'pubsub': MagicMock(return_value=create_redis_pubsub()),
-        'pipeline': MagicMock(return_value=create_redis_pipeline()),
-        'aclose': AsyncMock(),
+        "incr": AsyncMock(return_value=1),
+        "publish": AsyncMock(),
+        "get": AsyncMock(return_value="0"),
+        "scan": AsyncMock(return_value=(0, [])),
+        "pubsub": MagicMock(return_value=create_redis_pubsub()),
+        "pipeline": MagicMock(return_value=create_redis_pipeline()),
+        "aclose": AsyncMock(),
     }
 
     for key, value in defaults.items():
@@ -31,12 +31,12 @@ def create_redis_pipeline(**kwargs):
     """Creates a mock Redis pipeline."""
     mock = AsyncMock()
     defaults = {
-        '__aenter__': AsyncMock(return_value=mock),
-        '__aexit__': AsyncMock(return_value=None),
-        'lpush': AsyncMock(return_value=mock),
-        'ltrim': AsyncMock(return_value=mock),
-        'get': AsyncMock(return_value=mock),
-        'execute': AsyncMock(return_value=[None, None]),
+        "__aenter__": AsyncMock(return_value=mock),
+        "__aexit__": AsyncMock(return_value=None),
+        "lpush": AsyncMock(return_value=mock),
+        "ltrim": AsyncMock(return_value=mock),
+        "get": AsyncMock(return_value=mock),
+        "execute": AsyncMock(return_value=[None, None]),
     }
 
     for key, value in defaults.items():
@@ -67,7 +67,7 @@ async def mock_redis_dependencies():
     """Automatically mocks Redis dependencies for all tests."""
     mock = create_redis_client()
 
-    with patch('app.services.redis_service.redis_service._client', mock):
+    with patch("app.services.redis_service.redis_service._client", mock):
         yield mock
 
 
@@ -84,18 +84,19 @@ def redis_for_realtime_stats(mock_redis_dependencies):
     user_id1 = str(uuid.uuid4())
     user_id2 = str(uuid.uuid4())
 
-    mock_redis_dependencies.scan = AsyncMock(side_effect=[
-        (0, ['events:total:page_view', 'events:total:click']),
-        (0, [f'user:activity:{user_id1}', f'user:activity:{user_id2}']),
-    ])
+    mock_redis_dependencies.scan = AsyncMock(
+        side_effect=[
+            (0, ["events:total:page_view", "events:total:click"]),
+            (0, [f"user:activity:{user_id1}", f"user:activity:{user_id2}"]),
+        ],
+    )
     pipeline = mock_redis_dependencies.pipeline.return_value
-    pipeline.execute.return_value = ['150', '75']
-    
+    pipeline.execute.return_value = ["150", "75"]
 
     return {
-        'client': mock_redis_dependencies,
-        'pipeline': pipeline,
-        'user_ids': [user_id1, user_id2],
+        "client": mock_redis_dependencies,
+        "pipeline": pipeline,
+        "user_ids": [user_id1, user_id2],
     }
 
 

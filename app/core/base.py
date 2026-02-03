@@ -1,2 +1,2 @@
-from app.core.db import Base #noqa
-from app.models import Event, User #noqa
+from app.core.db import Base
+from app.models import Event, User

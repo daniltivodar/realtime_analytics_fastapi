@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -13,7 +13,7 @@ from tests.mocks.redis_mocks import create_redis_client
 async def sample_events(db_session: AsyncSession):
     """Example events for aggregation tests."""
     user_id1, user_id2 = uuid.uuid4(), uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     events = (
         Event(
             user_id=user_id1,
@@ -32,8 +32,8 @@ async def sample_events(db_session: AsyncSession):
     db_session.add_all(events)
     await db_session.commit()
     return {
-        'events': events,
-        'users': {'user_id1': user_id1, 'user_id2': user_id2},
+        "events": events,
+        "users": {"user_id1": user_id1, "user_id2": user_id2},
     }
 
 
@@ -43,7 +43,7 @@ def mock_redis_for_tasks():
     mock = create_redis_client()
     mock.setex = AsyncMock()
     mock.delete = AsyncMock()
-    mock.info = AsyncMock(return_value={'used_memory': 1024000})
+    mock.info = AsyncMock(return_value={"used_memory": 1024000})
     mock.lindex = AsyncMock(return_value=None)
     mock.__aenter__ = AsyncMock(return_value=mock)
     mock.__aexit__ = AsyncMock()
@@ -53,11 +53,12 @@ def mock_redis_for_tasks():
 @pytest.fixture
 def redis_patched(mock_redis_for_tasks):
     """Patching Redis service."""
-    module_path = 'app.services.redis_service.redis_service'
+    module_path = "app.services.redis_service.redis_service"
     with (
-        patch(f'{module_path}.get_client', return_value=mock_redis_for_tasks),
+        patch(f"{module_path}.get_client", return_value=mock_redis_for_tasks),
         patch(
-            f'{module_path}.publish_dashboard_update', new_callable=AsyncMock,
+            f"{module_path}.publish_dashboard_update",
+            new_callable=AsyncMock,
         ),
     ):
         yield mock_redis_for_tasks
@@ -67,8 +68,8 @@ def redis_patched(mock_redis_for_tasks):
 def redis_with_stats(redis_patched, request):
     """Redis with pre-installed statistics."""
     with patch(
-        'app.services.redis_service.redis_service.get_realtime_stats',
+        "app.services.redis_service.redis_service.get_realtime_stats",
         new_callable=AsyncMock,
-        return_value=getattr(request, 'param', {'total_events': 100}),
+        return_value=getattr(request, "param", {"total_events": 100}),
     ):
         yield redis_patched

@@ -11,20 +11,32 @@ from app.api.endpoints import (
 
 main_router = APIRouter()
 main_router.include_router(
-    health_router, prefix='/health', tags=['Health'],
+    health_router,
+    prefix="/health",
+    tags=["Health"],
 )
 main_router.include_router(
-    analytics_router, prefix='/analytics', tags=['Analytics'],
+    analytics_router,
+    prefix="/analytics",
+    tags=["Analytics"],
 )
 main_router.include_router(
-    auth_router, prefix='/auth', tags=['Auth'],
+    auth_router,
+    prefix="/auth",
+    tags=["Auth"],
 )
 main_router.include_router(
-    event_router, prefix='/event', tags=['Event'],
+    event_router,
+    prefix="/event",
+    tags=["Event"],
 )
 main_router.include_router(
-    task_router, prefix='/task', tags=['Task'],
+    task_router,
+    prefix="/task",
+    tags=["Task"],
 )
 main_router.include_router(
-    websocket_router, prefix='/ws', tags=['Websocket'],
+    websocket_router,
+    prefix="/ws",
+    tags=["Websocket"],
 )

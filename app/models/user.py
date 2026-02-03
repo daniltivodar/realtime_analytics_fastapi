@@ -8,5 +8,5 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     full_name = Column(String)
     api_key = Column(String, unique=True, index=True)
 
-    def __repr__(self):
-        return f'User {self.email}'
+    def __repr__(self) -> str:
+        return f"User {self.email}"

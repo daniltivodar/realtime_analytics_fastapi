@@ -1,19 +1,24 @@
 import logging
+from collections.abc import Callable
 from functools import wraps
+from typing import Any
 
 from app.core.db import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
 
-def celery_task_with_logging(log_success_message, log_error_msg):
-    """
-    Decorator for Celery tasks that provides
+def celery_task_with_logging(
+    log_success_message: str,
+    log_error_msg: str,
+) -> Callable[[Callable], Callable]:
+    """Decorator for Celery tasks that provides
     structured logging and error handling.
     """
-    def decorator(func):
+
+    def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: Any, **kwargs: Any) -> dict[str, Any]:
             try:
                 result = await func(*args, **kwargs)
                 key, value = next(iter(result.items()))
@@ -22,27 +27,30 @@ def celery_task_with_logging(log_success_message, log_error_msg):
                     extra={key: value},
                 )
                 return dict(
-                    status='success',
+                    status="success",
                     **result,
                 )
             except Exception as error:
-                logger.error(
+                logger.exception(
                     log_error_msg,
                     extra=dict(error=str(error)),
-                    exc_info=True,
                 )
-                return dict(status='error', error=str(error))
+                return dict(status="error", error=str(error))
+
         return wrapper
+
     return decorator
 
 
-def with_async_session(func):
+def with_async_session(func: Callable) -> Callable:
     """Decorator to provide async database session to Celery tasks."""
+
     @wraps(func)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
         session = AsyncSessionLocal()
         try:
             return await func(session, *args, **kwargs)
         finally:
             await session.close()
+
     return wrapper

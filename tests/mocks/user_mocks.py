@@ -8,7 +8,8 @@ from app.main import app
 
 
 def _create_mock_user(
-    user_id: uuid.UUID = None, is_superuser: bool = False,
+    user_id: uuid.UUID = None,
+    is_superuser: bool = False,
 ) -> Mock:
     """Factory for creating mock users."""
     user = Mock()
@@ -34,9 +35,10 @@ def mock_superuser():
 @pytest.fixture
 async def authenticated_client(async_client, mock_user):
     """Client with authentication."""
+
     async def override_current_user():
         return mock_user
-    
+
     app.dependency_overrides[current_user] = override_current_user
     yield async_client
     app.dependency_overrides.pop(current_user, None)
@@ -45,16 +47,17 @@ async def authenticated_client(async_client, mock_user):
 @pytest.fixture
 async def superuser_client(async_client, mock_superuser):
     """Client with superuser rights."""
+
     async def override_current_user():
         return mock_superuser
-    
+
     async def override_current_superuser():
         return mock_superuser
-    
+
     app.dependency_overrides[current_user] = override_current_user
     app.dependency_overrides[current_superuser] = override_current_superuser
-    
+
     yield async_client
-    
+
     app.dependency_overrides.pop(current_user, None)
     app.dependency_overrides.pop(current_superuser, None)

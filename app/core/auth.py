@@ -1,11 +1,18 @@
+from collections.abc import AsyncGenerator
 from uuid import UUID
 
 from fastapi import Depends
 from fastapi_users import (
-    BaseUserManager, FastAPIUsers, UUIDIDMixin, InvalidPasswordException,
+    BaseUserManager,
+    FastAPIUsers,
+    InvalidPasswordException,
+    UUIDIDMixin,
+    schemas,
 )
 from fastapi_users.authentication import (
-    AuthenticationBackend, BearerTransport, JWTStrategy,
+    AuthenticationBackend,
+    BearerTransport,
+    JWTStrategy,
 )
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,15 +20,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.db import get_async_session
 from app.models import User
-from app.schemas import UserCreate
 
 
-async def get_user_db(session: AsyncSession = Depends(get_async_session)):
+async def get_user_db(
+    session: AsyncSession = Depends(get_async_session),
+) -> AsyncGenerator:
     """Get a DB adapter for users."""
     yield SQLAlchemyUserDatabase(session, User)
 
 
-bearer_transport = BearerTransport('auth/jwt/login')
+bearer_transport = BearerTransport("auth/jwt/login")
+
 
 def get_jwt_strategy() -> JWTStrategy:
     """JWT strategy with secure settings."""
@@ -29,29 +38,37 @@ def get_jwt_strategy() -> JWTStrategy:
 
 
 auth_backend = AuthenticationBackend(
-    'jwt', bearer_transport, get_jwt_strategy,
+    "jwt",
+    bearer_transport,
+    get_jwt_strategy,
 )
+
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
     """User manager with UUID."""
 
     async def validate_password(
-        self, password: str, user: UserCreate,
+        self,
+        password: str,
+        user: schemas.BaseUserCreate | User,
     ) -> None:
         """Password validation upon registation and change."""
         if len(password) < 8:
+            error_message = "The password must contain at least 8 characters"
             raise InvalidPasswordException(
-                'The password must contain at least 8 characters',
+                error_message,
             )
+
         if user.email.lower() in password.lower():
+            error_message = "The password must not contain email"
             raise InvalidPasswordException(
-                'The password must not contain email',
+                error_message,
             )
 
 
 async def get_user_manager(
     user_db: SQLAlchemyUserDatabase = Depends(get_user_db),
-):
+) -> AsyncGenerator:
     """Get a user manager."""
     yield UserManager(user_db)
 
