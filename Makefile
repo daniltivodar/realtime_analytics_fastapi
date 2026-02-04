@@ -1,6 +1,6 @@
 .PHONY: up up-build down logs migrate migration db-connect test deploy \
 		celery-worker celery-beat celery-flower celery-logs health check-health \
-		dev deps lint format check clean pre-commit-install pre-commit
+		dev deps lint format check clean pre-commit-install pre-commit ci-local
 
 up:
 	docker compose up -d
@@ -80,3 +80,6 @@ pre-commit-install:
 
 pre-commit:
 	poetry run pre-commit run --all-files
+
+ci-local:
+	act -P ubuntu-latest=catthehacker/ubuntu:act-latest -W .github/workflows/ci-local.yml

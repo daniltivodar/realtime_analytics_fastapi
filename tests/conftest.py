@@ -1,4 +1,5 @@
-from collections.abc import AsyncGenerator
+import asyncio
+import os
 from unittest.mock import patch
 
 import pytest
@@ -23,54 +24,92 @@ pytest_plugins = [
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-TestingSessionLocal = async_sessionmaker(
-    test_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Creates and closes the event loop for the test session."""
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    yield loop
+
+    if not loop.is_closed():
+        loop.run_until_complete(loop.shutdown_asyncgens())
+        loop.close()
+
+
+@pytest.fixture(scope="session")
+async def test_engine():
+    """Creates a test engine for the database."""
+    engine = create_async_engine(
+        TEST_DATABASE_URL,
+        echo=False,
+        future=True,
+        connect_args={"check_same_thread": False},
+    )
+    yield engine
+    await engine.dispose()
+
+
+@pytest.fixture(scope="session")
+def testing_session_local(test_engine):
+    """Creates a sessionmaker based on the current test_engine."""
+    return async_sessionmaker(
+        test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
 
 
 @pytest.fixture(autouse=True)
-def patch_async_session_local():
+def patch_async_session_local(testing_session_local):
     """Replace the production session with a test one."""
-    with patch("app.tasks.decorators.AsyncSessionLocal", TestingSessionLocal):
-        yield
+    with patch(
+        "app.tasks.decorators.AsyncSessionLocal", testing_session_local
+    ):
+        with patch("app.core.db.AsyncSessionLocal", testing_session_local):
+            yield
 
 
 @pytest.fixture(autouse=True)
-async def init_db() -> AsyncGenerator[None, None]:
+async def init_db(test_engine):
     """Automatically creates and deletes tables before/after each test."""
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
     yield
+
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest.fixture
-async def db_session() -> AsyncGenerator[AsyncSession, None]:
+async def db_session(testing_session_local):
     """Creates a separate db session for each test."""
-    async with TestingSessionLocal() as session:
-        yield session
+    async with testing_session_local() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
 
 @pytest.fixture
-async def async_client():
-    """The main test client fixture, replaces db and auth dependecies."""
+async def async_client(testing_session_local):
+    """The main test client fixture, replaces db and auth dependencies."""
 
     async def override_get_async_session():
-        async with TestingSessionLocal() as session:
-            transaction = await session.begin()
-            try:
-                yield session
-            finally:
-                if transaction.is_active:
-                    await transaction.rollback()
-                await session.close()
+        async with testing_session_local() as session:
+            yield session
 
     original_session = app.dependency_overrides.get(get_async_session)
-
     app.dependency_overrides[get_async_session] = override_get_async_session
 
     async with (
@@ -85,4 +124,4 @@ async def async_client():
     if original_session:
         app.dependency_overrides[get_async_session] = original_session
     else:
-        del app.dependency_overrides[get_async_session]
+        app.dependency_overrides.pop(get_async_session, None)
