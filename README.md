@@ -1,6 +1,6 @@
 # 📊 Realtime Analytics Dashboard
 
-[![CI Status](https://github.com/danilkativodar/realtime-analytics-fastapi/actions/workflows/ci.yml/badge.svg)](https://github.com/danilkativodar/realtime-analytics-fastapi/actions/workflows/ci.yml) All CI checks pass
+[![CI Status](https://github.com/daniltivodar/realtime_analytics_fastapi/actions/workflows/ci.yml/badge.svg)](https://github.com/daniltivodar/realtime_analytics_fastapi/actions/workflows/ci.yml)
 [![Python Version](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/downloads/release/python-3110/)
 [![Code Coverage](https://img.shields.io/badge/coverage-70%25%2B-brightgreen)](./tests/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
